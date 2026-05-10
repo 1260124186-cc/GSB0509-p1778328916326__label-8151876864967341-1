@@ -7,6 +7,8 @@ const router = useRouter()
 const keyword = ref('')
 const status = ref<'all' | ExampleItem['status']>('all')
 const tag = ref<string>('all')
+const sortField = ref<'default' | 'updatedAt' | 'name'>('default')
+const sortOrder = ref<'asc' | 'desc'>('asc')
 
 const allTags = computed(() => {
   const set = new Set<string>()
@@ -16,12 +18,25 @@ const allTags = computed(() => {
 
 const filtered = computed(() => {
   const kw = keyword.value.trim().toLowerCase()
-  return exampleItems.filter((x) => {
+  const result = exampleItems.filter((x) => {
     const matchesKeyword = !kw || `${x.name} ${x.summary} ${x.tags.join(' ')}`.toLowerCase().includes(kw)
     const matchesStatus = status.value === 'all' || x.status === status.value
     const matchesTag = tag.value === 'all' || x.tags.includes(tag.value)
     return matchesKeyword && matchesStatus && matchesTag
   })
+  if (sortField.value === 'default') {
+    return result
+  }
+  const sorted = [...result].sort((a, b) => {
+    let compareResult = 0
+    if (sortField.value === 'updatedAt') {
+      compareResult = new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()
+    } else if (sortField.value === 'name') {
+      compareResult = a.name.localeCompare(b.name)
+    }
+    return sortOrder.value === 'asc' ? compareResult : -compareResult
+  })
+  return sorted
 })
 
 function statusLabel(s: ExampleItem['status']) {
@@ -48,6 +63,15 @@ function statusLabel(s: ExampleItem['status']) {
         </el-select>
         <el-select v-model="tag" size="large" class="toolSelect" placeholder="标签">
           <el-option v-for="t in allTags" :key="t" :label="t" :value="t" />
+        </el-select>
+        <el-select v-model="sortField" size="large" class="toolSelect" placeholder="排序">
+          <el-option label="默认顺序" value="default" />
+          <el-option label="更新时间" value="updatedAt" />
+          <el-option label="名称" value="name" />
+        </el-select>
+        <el-select v-model="sortOrder" size="large" class="toolSelect" placeholder="顺序" :disabled="sortField === 'default'">
+          <el-option label="升序" value="asc" />
+          <el-option label="降序" value="desc" />
         </el-select>
       </div>
     </div>
