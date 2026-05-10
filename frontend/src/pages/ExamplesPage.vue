@@ -7,6 +7,7 @@ const router = useRouter()
 const keyword = ref('')
 const status = ref<'all' | ExampleItem['status']>('all')
 const tag = ref<string>('all')
+const sortBy = ref<'default' | 'updatedAt' | 'name'>('default')
 
 const allTags = computed(() => {
   const set = new Set<string>()
@@ -16,12 +17,18 @@ const allTags = computed(() => {
 
 const filtered = computed(() => {
   const kw = keyword.value.trim().toLowerCase()
-  return exampleItems.filter((x) => {
+  const items = exampleItems.filter((x) => {
     const matchesKeyword = !kw || `${x.name} ${x.summary} ${x.tags.join(' ')}`.toLowerCase().includes(kw)
     const matchesStatus = status.value === 'all' || x.status === status.value
     const matchesTag = tag.value === 'all' || x.tags.includes(tag.value)
     return matchesKeyword && matchesStatus && matchesTag
   })
+  if (sortBy.value === 'updatedAt') {
+    items.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+  } else if (sortBy.value === 'name') {
+    items.sort((a, b) => a.name.localeCompare(b.name))
+  }
+  return items
 })
 
 function statusLabel(s: ExampleItem['status']) {
@@ -48,6 +55,11 @@ function statusLabel(s: ExampleItem['status']) {
         </el-select>
         <el-select v-model="tag" size="large" class="toolSelect" placeholder="标签">
           <el-option v-for="t in allTags" :key="t" :label="t" :value="t" />
+        </el-select>
+        <el-select v-model="sortBy" size="large" class="toolSelect" placeholder="排序">
+          <el-option label="默认" value="default" />
+          <el-option label="更新时间" value="updatedAt" />
+          <el-option label="名称" value="name" />
         </el-select>
       </div>
     </div>
