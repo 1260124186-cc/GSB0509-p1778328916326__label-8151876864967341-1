@@ -7,6 +7,8 @@ const router = useRouter()
 const keyword = ref('')
 const status = ref<'all' | ExampleItem['status']>('all')
 const tag = ref<string>('all')
+const sortBy = ref<'default' | 'name' | 'updatedAt'>('default')
+const sortOrder = ref<'asc' | 'desc'>('asc')
 
 const allTags = computed(() => {
   const set = new Set<string>()
@@ -16,12 +18,26 @@ const allTags = computed(() => {
 
 const filtered = computed(() => {
   const kw = keyword.value.trim().toLowerCase()
-  return exampleItems.filter((x) => {
+  let result = exampleItems.filter((x) => {
     const matchesKeyword = !kw || `${x.name} ${x.summary} ${x.tags.join(' ')}`.toLowerCase().includes(kw)
     const matchesStatus = status.value === 'all' || x.status === status.value
     const matchesTag = tag.value === 'all' || x.tags.includes(tag.value)
     return matchesKeyword && matchesStatus && matchesTag
   })
+
+  if (sortBy.value !== 'default') {
+    result = [...result].sort((a, b) => {
+      let comparison = 0
+      if (sortBy.value === 'name') {
+        comparison = a.name.localeCompare(b.name)
+      } else if (sortBy.value === 'updatedAt') {
+        comparison = new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()
+      }
+      return sortOrder.value === 'asc' ? comparison : -comparison
+    })
+  }
+
+  return result
 })
 
 function statusLabel(s: ExampleItem['status']) {
@@ -49,6 +65,15 @@ function statusLabel(s: ExampleItem['status']) {
         <el-select v-model="tag" size="large" class="toolSelect" placeholder="标签">
           <el-option v-for="t in allTags" :key="t" :label="t" :value="t" />
         </el-select>
+        <el-select v-model="sortBy" size="large" class="toolSelect" placeholder="排序">
+          <el-option label="默认顺序" value="default" />
+          <el-option label="按名称" value="name" />
+          <el-option label="按更新时间" value="updatedAt" />
+        </el-select>
+        <el-button-group v-if="sortBy !== 'default'" size="large">
+          <el-button :type="sortOrder === 'asc' ? 'primary' : 'default'" @click="sortOrder = 'asc'">升序</el-button>
+          <el-button :type="sortOrder === 'desc' ? 'primary' : 'default'" @click="sortOrder = 'desc'">降序</el-button>
+        </el-button-group>
       </div>
     </div>
 
